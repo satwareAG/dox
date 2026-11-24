@@ -16,7 +16,7 @@
 
 - Branch protection on main is a 0-approval required-PR gate with `enforce_admins=false`: it is NOT review and NOT core enforcement. It blocks force-push and deletion; admins retain bypass
 - Hooks are clone-local: contributors must run `git config core.hooksPath .githooks`, and `--no-verify` bypasses them entirely; web-UI PR merges bypass them
-- No server-side core or secret verification exists yet (docs-only fork, no CI). Follow-up: lightweight CI workflow on PRs (core integrity + betterleaks); open it before the first enforcement bypass, not after
+- Server-side verification = the CI workflow (`.github/workflows/verify.yml`): marker pair check, core byte-stability against the PINNED baseline via `.githooks/baseline.sh` (fails closed on missing, moved, or rogue `v*-upstream` tags - the newest tag is never trusted), secret scan over the PR diff (betterleaks, pattern-scan fallback, input coverage asserted), and the `.githooks/*control*` reject-path drivers. Branch protection (required-PR, 0 approvals, admin bypass) remains NOT review and NOT core enforcement. It blocks force-push and deletion; admins retain bypass
 - Routine pushes should use a non-admin token so the force-push block binds writers; admin pushes are for reviewed syncs only
 
 ## Repository hooks
