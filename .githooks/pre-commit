@@ -1,0 +1,58 @@
+#!/bin/sh
+# pre-commit: whitespace, secret scan (fail-fast), protected DOX core integrity
+# Portable POSIX sh. Feature-detects gitleaks; falls back to pattern scan.
+
+# 0. nothing staged -> nothing to check
+if [ -z "$(git diff --cached --name-only)" ]; then
+    exit 0
+fi
+
+# 1. whitespace errors
+if ! git diff --check --cached > /tmp/.dox-whitespace.$$ 2>&1; then
+    cat /tmp/.dox-whitespace.$$ >&2
+    rm -f /tmp/.dox-whitespace.$$
+    echo "pre-commit: whitespace errors in staged changes" >&2
+    exit 1
+fi
+rm -f /tmp/.dox-whitespace.$$
+
+# 2. secret scan, fail-fast (betterleaks is the mandated scanner)
+if command -v betterleaks > /dev/null 2>&1 && betterleaks git --help 2> /dev/null | grep -q -- '--staged'; then
+    if ! betterleaks git --pre-commit --staged -l error > /tmp/.dox-betterleaks.$$ 2>&1; then
+        cat /tmp/.dox-betterleaks.$$ >&2
+        rm -f /tmp/.dox-betterleaks.$$
+        echo "pre-commit: betterleaks found secrets in staged changes" >&2
+        exit 1
+    fi
+    rm -f /tmp/.dox-betterleaks.$$
+else
+    if git diff --cached -U0 | grep -iE '^\+.*(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36,}|-----BEGIN [A-Z ]*PRIVATE KEY|xox[baprs]-|sk-[A-Za-z0-9]{20,})' > /dev/null 2>&1; then
+        echo "pre-commit: potential secret in staged changes (pattern scan fallback; install betterleaks for full coverage)" >&2
+        exit 1
+    fi
+fi
+
+# 3. protected DOX core integrity
+#    core edits are allowed only with a deliberate sync signal staged (SYNC.md)
+if git diff --cached --name-only | grep -q '^AGENTS.md$'; then
+    old_core=$(git show HEAD:AGENTS.md 2> /dev/null | sed -n '/^<!-- DOX-CORE-START/,/^<!-- DOX-CORE-END/p' | sed '1d;$d')
+    new_core=$(git show :AGENTS.md | sed -n '/^<!-- DOX-CORE-START/,/^<!-- DOX-CORE-END/p' | sed '1d;$d')
+    starts=$(git show :AGENTS.md | grep -c 'DOX-CORE-START')
+    ends=$(git show :AGENTS.md | grep -c 'DOX-CORE-END')
+    if [ "$starts" != "1" ] || [ "$ends" != "1" ]; then
+        echo "pre-commit: REJECTED - DOX marker pair broken (START=$starts END=$ends, must be 1/1)" >&2
+        exit 1
+    fi
+    if [ "$old_core" != "$new_core" ]; then
+        if git diff --cached --name-only | grep -qE '^SYNC\.md$'; then
+            echo "pre-commit: protected core changed - sync signal staged (reviewed upstream sync path)"
+        else
+            echo "pre-commit: REJECTED - protected DOX core modified without sync signal" >&2
+            echo "  core edits are reviewed upstream syncs only (see SYNC.md);" >&2
+            echo "  stage SYNC.md in the same commit to signal a deliberate core upgrade" >&2
+            exit 1
+        fi
+    fi
+fi
+
+exit 0
