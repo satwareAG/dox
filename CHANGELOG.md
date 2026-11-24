@@ -10,7 +10,7 @@ Forward-only. One entry per adopted change after the `v0-upstream` baseline (age
 
 ## 2026-11-24 - CI verification (issue #5, corrected)
 
-- Added `.github/workflows/verify.yml` (PR + push to main + manual): full-history checkout (pinned actions SHA, fetch-depth 0 + explicit tag fetch), marker pair check, core byte-stability via `cmp` against the PINNED baseline (trailing newlines count; no `$(...)` stripping), secret scan over the PR diff (betterleaks with pattern fallback; empty scan input fails closed), and all five `.githooks` control drivers
+- Added `.github/workflows/verify.yml` (PR + push to main + manual): full-history checkout (pinned actions SHA, fetch-depth 0 + explicit tag fetch), marker pair check, core byte-stability via `cmp` against the PINNED baseline (trailing newlines count; no `$(...)` stripping), secret scan over the PR diff (betterleaks with pattern fallback; empty scan input fails closed), and every `.githooks` control driver
 - Added `.githooks/baseline.sh`: single source of truth for the upstream baseline pin (`v0-upstream` @ 765ae4ac); fails closed on missing, moved, or rogue `v*-upstream` tags - the newest local tag is never trusted
 - Negative controls `negative-control-baseline-missing.sh` and `negative-control-rogue-tag.sh` prove the fail-closed paths
 - SYNC.md "Enforcement status" updated: server-side verification is the CI workflow; branch protection remains explicitly not enforcement
@@ -37,3 +37,17 @@ Forward-only. One entry per adopted change after the `v0-upstream` baseline (age
 
 - `tools/lint-convention-index.mjs`: validates Child DOX Index tables (paths end with / and stay relative, file links resolve to existing AGENTS.md, one-line scopes, unique paths, childless is valid); `--selftest` runs the fixture matrix (childless, valid tree, stale entry, missing file, duplicate path)
 - CONVENTION-INDEX.md updated: linter exists, still opt-in and not a CI merge gate
+
+## 2026-11-24 - eval run 1
+
+- `eval/`: fixture builder (3 configs x identical base project), runner (opencode CLI, fixed model), success oracle, collector; run `eval/2026-11-24-run1` with raw artifacts (transcripts, session metas, checks, summary.json); 6/6 primary success, secondary child-doc rules honored only by the DOX configs; caveats documented in the run README; main README points to that run only
+- Machine-local paths scrubbed from the committed artifacts (rewritten to run-relative paths)
+
+## 2026-11-24 - PR review hardening round
+
+- PII: artifacts scrubbed; new PII layer in pre-commit and CI rejecting machine-local path prefixes (the home and Users directories) and RFC1918 addresses in added lines; `negative-control-pii.sh` proves rejection and that clean prose passes
+- betterleaks in CI: installed at pinned v1.10.0 with the published checksums.txt entry verified against a pinned sha256 literal; any download or checksum failure fails the job; pattern and PII layers stay
+- Sync signal is verified, not just format-checked: `.githooks/sync-check.sh` requires the trailer SHA to resolve and be reachable from upstream/main (fetch upstream; unreachable fetch fails closed), the proposed core to equal that commit's AGENTS.md byte-exactly, and the baseline pin bumped to it in the same change; used by pre-commit (staged) and pre-push (tip)
+- New controls: `negative-control-sync-fake-sha.sh` (unreachable trailer rejected), `negative-control-sync-nopin.sh` (real SHA without pin bump rejected), `positive-control-sync.sh` rewritten as a full correct sync through a simulated local upstream (pre-commit + pre-push accept)
+- Nits: Slack secret pattern length-anchored (bare `xoxb-` prose no longer trips it); pre-push fails on a tip without AGENTS.md instead of skipping; pre-commit says "AGENTS.md removed" on deletion; CI added-line count excludes diff headers (`^\+[^+]`); CI strips markers from the baseline file the same way as from HEAD (raw-file fallback for pre-marker baselines); check.sh prints all criteria before exiting nonzero; lint duplicate endsWith dropped; collector derives the eval model from transcripts and keeps a real 0 as 0; eval runner pins the model on the opencode CLI
+- CODEOWNERS + SETUP.md: review gate for the enforcement paths; SETUP.md lists the owner-only repo settings (required `verify` check, code-owner review) that turn the gates on; SYNC.md enforcement status now states exactly what is on and what waits on the owner
