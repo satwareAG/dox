@@ -137,6 +137,9 @@ jobs:
 
       - name: Hook controls (reject paths stay proven)
         run: |
+          # sync-path controls verify against upstream; give them the remote
+          # the checkout does not carry (public read-only fetch, SYNC.md step 1)
+          git remote get-url upstream > /dev/null 2>&1 || git remote add upstream https://github.com/agent0ai/dox
           count=0
           for c in .githooks/*control*.sh; do
             echo "::group::$(basename "$c")"
