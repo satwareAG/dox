@@ -32,3 +32,8 @@ Forward-only. One entry per adopted change after the `v0-upstream` baseline (age
 - Canonical AGENTS.md: post-marker template notice (delimited `TEMPLATE-NOTICE-START/END`) states this file is the distributable template, not a project to scan; the installer replaces it with an installed-from line in installed copies
 - Installer control: `.githooks/positive-control-install.sh` (idempotency, honesty mandatory, flag gating, core untouched)
 - `addenda/lazy-read.md`: opt-in token-budget addendum (`--lazy-read`); chain-only reads for touched paths, one-line index entries, no repository overviews in always-loaded files, re-read only the owning chain, explicit tool reads (runtimes resolve nested AGENTS.md files differently). Stays outside the protected core: it is project-optional behavior, not the universal contract; the core stays byte-stable against the upstream baseline
+
+## 2026-11-24 - convention-index linter
+
+- `tools/lint-convention-index.mjs`: validates Child DOX Index tables (paths end with / and stay relative, file links resolve to existing AGENTS.md, one-line scopes, unique paths, childless is valid); `--selftest` runs the fixture matrix (childless, valid tree, stale entry, missing file, duplicate path)
+- CONVENTION-INDEX.md updated: linter exists, still opt-in and not a CI merge gate

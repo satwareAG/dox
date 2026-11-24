@@ -1,6 +1,6 @@
 # CONVENTION-INDEX - machine-checkable Child DOX Index (opt-in)
 
-Status: opt-in convention, no CI gate yet. Enforcement triggers are listed at the bottom.
+Status: opt-in convention. A linter exists (`node tools/lint-convention-index.mjs <dir>`, self-test via `--selftest`) covering rules 1-5 with the fixture matrix below; it is not yet a CI merge gate. Enforcement triggers are listed at the bottom.
 
 ## Entry format
 
@@ -27,4 +27,4 @@ Rules (machine-checkable):
 - Upstream lands its own machine-checkable convention that can be adopted
 - A real fixture tree exists in this repo to test against
 
-Fixture matrix when the gate lands: childless (valid), valid tree, stale entry, missing file, duplicate path.
+Fixture matrix (implemented in the linter self-test): childless (valid), valid tree, stale entry (missing trailing slash), missing file, duplicate path.

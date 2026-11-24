@@ -1,0 +1,22 @@
+{
+  "id": "ses_df2a8ffe5ffeEXMnwtzwrYXPor",
+  "title": "dox-eval fixture-dox t2",
+  "model": null,
+  "cost": 0,
+  "tokens": {
+    "input": 85888,
+    "output": 983,
+    "reasoning": 2031,
+    "cache": {
+      "read": 196288,
+      "write": 0
+    }
+  },
+  "time": {
+    "created": 1795520135197,
+    "updated": 1795520173772,
+    "busy": 1795520135724,
+    "idle": 1795520173778,
+    "archived": 1795520135222
+  }
+}

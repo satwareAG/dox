@@ -43,6 +43,10 @@ No AGENTS.md yet? Run the installer and it will place the file. The agent will s
 
 For an existing project, tell your agent: `Initialize DOX tree for this project now.` It will create all the child AGENTS.md files and indexes.
 
+## Measured results
+
+One eval run exists: [eval/2026-11-24-run1](./eval/2026-11-24-run1/README.md) - two fixed tasks across no-DOX / bare-AGENTS / DOX fixtures on one model; raw counts and caveats are documented in that run's README, and it describes that run only.
+
 ## Fork status
 
 This is the satwareAG-maintained fork of [agent0ai/dox](https://github.com/agent0ai/dox), pinned at upstream commit 765ae4ac (tag `v0-upstream`). Upstream is dormant since 2026-09-01; this fork carries the maintained spec, the upstream sync protocol ([SYNC.md](./SYNC.md)), and installer-consumable addenda ([addenda/](./addenda/)). Core changes land only as reviewed upstream syncs - see SYNC.md for the protocol and reject conditions.

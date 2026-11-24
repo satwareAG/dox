@@ -1,0 +1,3 @@
+ok: config.js uses /v2
+ok: config.js has no /v1 left
+success: t1
