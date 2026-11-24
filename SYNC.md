@@ -6,10 +6,10 @@
 
 ## Protocol
 
-1. Fetch upstream: `git fetch upstream && git log --oneline v0-upstream..upstream/main`
+1. Add the upstream remote when missing: `git remote add upstream https://github.com/agent0ai/dox`; then fetch upstream: `git fetch upstream && git log --oneline v0-upstream..upstream/main`
 2. Review core diffs only: `git diff v0-upstream upstream/main -- AGENTS.md`
 3. Reject: reformatting, section reorder, rewording of core lines, whitespace churn
-4. Adopt: apply reviewed core changes inside the marker range, keep the byte-stability contract, add a CHANGELOG entry citing the upstream commit, retag vN-upstream AT THE UPSTREAM FETCH COMMIT (never at a fork commit - fork commits carry the marker wrapper), and bump the pinned ref consumers use. A core-change commit stages SYNC.md as the deliberate sync signal and names the upstream commit
+4. Adopt: apply reviewed core changes inside the marker range, keep the byte-stability contract, add a CHANGELOG entry citing the upstream commit, retag vN-upstream AT THE UPSTREAM FETCH COMMIT (never at a fork commit - fork commits carry the marker wrapper), and bump the pinned ref consumers use (`.githooks/baseline.sh`: tag name + SHA together). A core-change commit is the deliberate sync signal: it stages SYNC.md carrying an `Upstream-Commit: <40-hex-sha>` line naming the adopted upstream commit, and the commit message carries the same trailer. A whitespace-only SYNC.md edit is not a sync signal (hooks reject it)
 5. If upstream wakes after long dormancy: re-review this protocol before merging anything
 
 ## Enforcement status (read before relying on the hooks)
@@ -22,9 +22,9 @@
 ## Repository hooks
 
 - Enable: `git config core.hooksPath .githooks`
-- `pre-commit`: whitespace check, secret scan fail-fast via betterleaks (`betterleaks git --pre-commit --staged`; pattern-scan fallback when betterleaks is absent), marker-pair check, protected-core integrity (core edits blocked unless SYNC.md is staged - the deliberate sync signal, naming the upstream commit)
-- `pre-push`: marker pair uniqueness + core byte-stability against the latest `v*-upstream` tag, for every pushed ref touching AGENTS.md; fails closed on unreadable ranges
-- Test drivers (negative and positive controls): `negative-control-secret.sh`, `negative-control-core.sh`, `negative-control-push.sh`, `positive-control-clean.sh`, `positive-control-push.sh`
+- `pre-commit`: whitespace check; secret scan fail-fast in two layers - betterleaks (`betterleaks git --pre-commit --staged`) plus a pattern scan that always runs (entropy-gated scanner rules do not see low-entropy synthetic keys); marker-pair check; protected-core integrity compared byte-exactly with `cmp` (trailing newlines count). Core edits are blocked unless SYNC.md is staged AND carries an `Upstream-Commit: <40-hex-sha>` line naming the adopted upstream commit - a whitespace-only SYNC.md edit does not unlock anything
+- `pre-push`: marker pair uniqueness + core byte-stability against the PINNED baseline via `.githooks/baseline.sh`, compared byte-exactly with `cmp`; fails closed on unreadable ranges, on missing/moved/rogue `v*-upstream` tags (the newest tag is never trusted), and on a diverged core whose pushed range lacks an `Upstream-Commit` trailer
+- Test drivers (negative and positive controls): `negative-control-secret.sh`, `negative-control-core.sh`, `negative-control-push.sh`, `negative-control-baseline-missing.sh`, `negative-control-rogue-tag.sh`, `negative-control-trailing-newline.sh`, `negative-control-whitespace-unlock.sh`, `positive-control-clean.sh`, `positive-control-push.sh`, `positive-control-sync.sh`. CI (`.github/workflows/verify.yml`) runs every `*control*.sh` driver on each PR
 
 ## Reject conditions (hard)
 

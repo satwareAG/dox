@@ -14,3 +14,13 @@ Forward-only. One entry per adopted change after the `v0-upstream` baseline (age
 - Added `.githooks/baseline.sh`: single source of truth for the upstream baseline pin (`v0-upstream` @ 765ae4ac); fails closed on missing, moved, or rogue `v*-upstream` tags - the newest local tag is never trusted
 - Negative controls `negative-control-baseline-missing.sh` and `negative-control-rogue-tag.sh` prove the fail-closed paths
 - SYNC.md "Enforcement status" updated: server-side verification is the CI workflow; branch protection remains explicitly not enforcement
+
+## 2026-11-24 - hook hardening
+
+- `pre-commit` and `pre-push` compare the protected core byte-exactly with `cmp` (trailing newlines count; the previous `$(...)` extraction stripped trailing newlines and hid that edit class)
+- `pre-push` resolves the baseline through `.githooks/baseline.sh`: pinned tag + SHA, fail closed on missing, moved, or rogue `v*-upstream` tags (the newest-tag heuristic is gone)
+- Sync signal is now formal: staged SYNC.md must carry `Upstream-Commit: <40-hex-sha>`; a whitespace-only SYNC.md edit unlocks nothing. `pre-push` additionally requires the trailer in the sync commit message for a diverged core
+- `pre-commit` secret scan runs the pattern layer in addition to betterleaks (entropy-gated rules miss low-entropy synthetic keys)
+- `pre-commit` header comment corrected: betterleaks (was gitleaks)
+- New controls: `negative-control-trailing-newline.sh`, `negative-control-whitespace-unlock.sh`, `positive-control-sync.sh`; CI runs all controls via glob
+- SYNC.md: protocol step 1 adds the upstream remote when missing; step 4 formalizes the trailer + pin-bump requirements; hooks section documents the hardened behavior

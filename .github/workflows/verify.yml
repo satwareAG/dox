@@ -95,8 +95,11 @@ jobs:
 
       - name: Hook controls (reject paths stay proven)
         run: |
-          for c in negative-control-secret negative-control-core negative-control-push positive-control-clean positive-control-push; do
-            echo "::group::$c"
-            sh ".githooks/$c.sh"
+          count=0
+          for c in .githooks/*control*.sh; do
+            echo "::group::$(basename "$c")"
+            sh "$c" || { echo "::error::control failed: $c"; exit 1; }
+            count=$((count + 1))
             echo "::endgroup::"
           done
+          echo "controls run: $count"
