@@ -43,6 +43,13 @@ Forward-only. One entry per adopted change after the `v0-upstream` baseline (age
 - `eval/`: fixture builder (3 configs x identical base project), runner (opencode CLI, fixed model), success oracle, collector; run `eval/2026-11-24-run1` with raw artifacts (transcripts, session metas, checks, summary.json); 6/6 primary success, secondary child-doc rules honored only by the DOX configs; caveats documented in the run README; main README points to that run only
 - Machine-local paths scrubbed from the committed artifacts (rewritten to run-relative paths)
 
+## 2026-11-24 - re-review fixes
+
+- pre-commit: staged removal of AGENTS.md is rejected with the explicit "AGENTS.md removed" message before the marker-pair guard (the previous wording landed on an unreachable path); new `negative-control-delete.sh` pins the reason
+- Sync-path controls reason-pinned: trailing-newline sub-a/sub-b, tampered-push, sync-fake-sha, and sync-nopin now assert the intended rejection message (missing signal, byte-equality, reachability, pin bump) instead of bare exit codes; offline machines fail the network-dependent ones instead of passing for the wrong reason
+- pre-push header wording corrected: the range message trailer is only the entry trigger; the verified facts are the tip SYNC.md SHA, byte-exact core equality with that commit, and the pin bump in the same change
+- CI diagnostics: marker-pair greps keep zero counts (own error prints instead of grep noise); added-line count now includes blank and ++-prefixed added lines while excluding +++ headers (two-stage grep), bytes coverage assert unchanged
+
 ## 2026-11-24 - PR review hardening round
 
 - PII: artifacts scrubbed; new PII layer in pre-commit and CI rejecting machine-local path prefixes (the home and Users directories) and RFC1918 addresses in added lines; `negative-control-pii.sh` proves rejection and that clean prose passes

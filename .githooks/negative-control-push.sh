@@ -28,9 +28,14 @@ git -C "$repo" branch nc-push-tampered "$tampered_sha"
 
 base_sha=$(git -C "$repo" rev-parse v0-upstream)
 cd "$repo"
-if printf '%s %s %s %s\n' "refs/heads/main" "$tampered_sha" "refs/heads/main" "$base_sha" \
-    | sh "$repo/.githooks/pre-push"; then
+if out=$(printf '%s %s %s %s\n' "refs/heads/main" "$tampered_sha" "refs/heads/main" "$base_sha" \
+    | sh "$repo/.githooks/pre-push" 2>&1); then
     echo "NC FAILED: pre-push accepted a tampered core tip with a forged sync signal" >&2
     exit 1
 fi
+printf '%s\n' "$out" | grep -q 'byte-exactly' || {
+    echo "NC FAILED: rejection reason was not the core-equality check; got:" >&2
+    printf '%s\n' "$out" | tail -2 >&2
+    exit 1
+}
 echo "NC PASS: tampered core tip rejected"

@@ -25,21 +25,33 @@ awk '/^<!-- DOX-CORE-END/ && !done { print ""; print; done = 1; next } { print }
 mv AGENTS.md.tnl AGENTS.md
 git add AGENTS.md
 
-# a) no sync signal staged -> pre-commit must reject
-if sh "$repo/.githooks/pre-commit" > /dev/null 2>&1; then
+# a) no sync signal staged -> pre-commit must reject with the no-signal reason
+if out=$(sh "$repo/.githooks/pre-commit" 2>&1); then
     echo "NC FAILED: pre-commit accepted a trailing-newline core edit without a sync signal" >&2
     exit 1
 fi
+printf '%s\n' "$out" | grep -q 'without a valid sync signal' || {
+    echo "NC FAILED: sub-a rejected for an unexpected reason; got:" >&2
+    printf '%s\n' "$out" | tail -2 >&2
+    exit 1
+}
 echo "NC sub-a PASS: trailing-newline core edit rejected without sync signal"
 
 # b) format-valid sync signal (trailer + pin matching the named commit) but
-#    the core carries the extra newline -> the equality check must reject
+#    the core carries the extra newline -> the byte-equality check must
+#    reject with the equality reason (requires upstream reachability;
+#    offline machines fail earlier at the fetch step instead)
 printf -- '\nUpstream-Commit: 765ae4ac02cc884eefcd41a3d0f71941721adb89\n' >> SYNC.md
 git add SYNC.md
-if sh "$repo/.githooks/pre-commit" > /dev/null 2>&1; then
+if out=$(sh "$repo/.githooks/pre-commit" 2>&1); then
     echo "NC FAILED: pre-commit accepted a trailing-newline core despite a format-valid sync signal" >&2
     exit 1
 fi
+printf '%s\n' "$out" | grep -q 'byte-exactly' || {
+    echo "NC FAILED: sub-b rejected for an unexpected reason; got:" >&2
+    printf '%s\n' "$out" | tail -2 >&2
+    exit 1
+}
 echo "NC sub-b PASS: trailing-newline core rejected despite format-valid sync signal"
 
 # c) --no-verify commit (message without trailer) -> pre-push must reject the tip

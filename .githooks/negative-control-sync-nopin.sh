@@ -39,8 +39,13 @@ mv AGENTS.md.new AGENTS.md
 printf -- '\nUpstream-Commit: %s\n' "$up_sha" >> SYNC.md
 git add AGENTS.md SYNC.md
 
-if sh "$repo/.githooks/pre-commit" > /dev/null 2>&1; then
+if out=$(sh "$repo/.githooks/pre-commit" 2>&1); then
     echo "NC FAILED: pre-commit accepted a sync without the pin bump" >&2
     exit 1
 fi
+printf '%s\n' "$out" | grep -q 'PINNED_SHA' || {
+    echo "NC FAILED: rejection reason was not the pin-bump check; got:" >&2
+    printf '%s\n' "$out" | tail -2 >&2
+    exit 1
+}
 echo "NC PASS: real upstream SHA without pin bump rejected"

@@ -37,8 +37,13 @@ sed -i "s/^PINNED_SHA=.*/PINNED_SHA=$fake_sha/" .githooks/baseline.sh
 printf -- '\nUpstream-Commit: %s\n' "$fake_sha" >> SYNC.md
 git add AGENTS.md SYNC.md .githooks/baseline.sh
 
-if sh "$repo/.githooks/pre-commit" > /dev/null 2>&1; then
+if out=$(sh "$repo/.githooks/pre-commit" 2>&1); then
     echo "NC FAILED: pre-commit accepted an unreachable trailer SHA" >&2
     exit 1
 fi
+printf '%s\n' "$out" | grep -q 'does not resolve' || {
+    echo "NC FAILED: rejection reason was not the reachability check; got:" >&2
+    printf '%s\n' "$out" | tail -2 >&2
+    exit 1
+}
 echo "NC PASS: fake (unreachable) trailer SHA rejected"

@@ -6,10 +6,11 @@
 #     trusted)
 #   - compares are byte-exact via cmp (trailing newlines count, no $(...)
 #     stripping)
-#   - a core that diverges from the pinned baseline passes only when the
-#     pushed range carries a reviewed sync commit: a message trailer
-#     'Upstream-Commit: <40-hex-sha>' naming the adopted upstream commit,
-#     with the baseline pin bumped in the same push
+#   - a core that diverges from the pinned baseline passes only when the tip
+#     state passes sync-check.sh: the tip SYNC.md names an upstream commit
+#     (message trailers in the range are only the entry trigger), the tip
+#     core equals that commit's AGENTS.md byte-exactly, and the pin is
+#     bumped to it in the same change
 # Reads pre-push stdin (local_ref local_sha remote_ref remote_sha) lines.
 
 ZERO=0000000000000000000000000000000000000000

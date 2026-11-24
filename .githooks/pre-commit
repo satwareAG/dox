@@ -51,6 +51,10 @@ fi
 #    must carry an 'Upstream-Commit: <40-hex-sha>' line naming the adopted
 #    upstream commit. A whitespace-only SYNC.md edit is NOT a sync signal.
 if git diff --cached --name-only | grep -q '^AGENTS.md$'; then
+    if ! git cat-file -e ":AGENTS.md" 2> /dev/null; then
+        echo "pre-commit: REJECTED - AGENTS.md removed (the DOX rail cannot be deleted; restore it or review as a sync)" >&2
+        exit 1
+    fi
     starts=$(git show :AGENTS.md | grep -c 'DOX-CORE-START')
     ends=$(git show :AGENTS.md | grep -c 'DOX-CORE-END')
     if [ "$starts" != "1" ] || [ "$ends" != "1" ]; then
@@ -59,11 +63,6 @@ if git diff --cached --name-only | grep -q '^AGENTS.md$'; then
     fi
     tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/dox-precommit.XXXXXX")
     git show HEAD:AGENTS.md 2> /dev/null | sed -n '/^<!-- DOX-CORE-START/,/^<!-- DOX-CORE-END/p' | sed '1d;$d' > "$tmpdir/old-core"
-    if [ ! -s "$tmpdir/old-core" ] && ! git cat-file -e "HEAD:AGENTS.md" 2> /dev/null; then
-        echo "pre-commit: REJECTED - AGENTS.md removed (the DOX rail cannot be deleted; restore or review as a sync)" >&2
-        rm -rf "$tmpdir"
-        exit 1
-    fi
     git show :AGENTS.md | sed -n '/^<!-- DOX-CORE-START/,/^<!-- DOX-CORE-END/p' | sed '1d;$d' > "$tmpdir/new-core"
     if ! cmp -s "$tmpdir/old-core" "$tmpdir/new-core"; then
         if git diff --cached --name-only | grep -qE '^SYNC\.md$'; then
