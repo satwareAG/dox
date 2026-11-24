@@ -1,0 +1,150 @@
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0, pinned SHA
+        with:
+          fetch-depth: 0
+
+      - name: Ensure all tags are present
+        run: git fetch origin --tags --force
+
+      - name: Resolve pinned baseline (fail closed)
+        id: baseline
+        run: |
+          sha=$(sh .githooks/baseline.sh)
+          echo "pinned baseline commit: $sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Marker pair check
+        run: |
+          # grep -c exits 1 on zero matches; keep the count and print our own error
+          starts=$(grep -c 'DOX-CORE-START' AGENTS.md || true)
+          ends=$(grep -c 'DOX-CORE-END' AGENTS.md || true)
+          if [ "$starts" != "1" ] || [ "$ends" != "1" ]; then
+            echo "::error::DOX marker pair broken (START=$starts END=$ends, must be 1/1)"
+            exit 1
+          fi
+          echo "marker pair ok (1/1)"
+
+      - name: Core byte-stability vs pinned baseline (cmp; trailing newlines count)
+        env:
+          BASELINE_SHA: ${{ steps.baseline.outputs.sha }}
+        run: |
+          sed -n '/^<!-- DOX-CORE-START/,/^<!-- DOX-CORE-END/p' AGENTS.md | sed '1d;$d' > /tmp/core-head
+          git show "$BASELINE_SHA:AGENTS.md" > /tmp/core-base-raw
+          # strip markers from the baseline the same way as from HEAD; fall
+          # back to the raw file for pre-marker baselines (no markers)
+          sed -n '/^<!-- DOX-CORE-START/,/^<!-- DOX-CORE-END/p' /tmp/core-base-raw | sed '1d;$d' > /tmp/core-base
+          [ -s /tmp/core-base ] || cp /tmp/core-base-raw /tmp/core-base
+          if ! cmp /tmp/core-head /tmp/core-base; then
+            echo "::error::protected core diverged from pinned baseline (reviewed sync required, see SYNC.md)"
+            exit 1
+          fi
+          echo "core byte-identical to pinned baseline ($BASELINE_SHA)"
+
+      - name: Install betterleaks (pinned version, sha256-verified, fail closed)
+        env:
+          BL_VERSION: "1.10.0"
+          BL_SHA256: "9d9ad503cd5d80d18a939352266c3fcca52f10da9b83cd5cfe646989b13940fe"
+          BL_ASSET: "betterleaks_1.10.0_linux_x64.tar.gz"
+        run: |
+          set -e
+          base="https://github.com/betterleaks/betterleaks/releases/download/v${BL_VERSION}"
+          tmp=$(mktemp -d)
+          curl -sSfL -o "$tmp/$BL_ASSET" "$base/$BL_ASSET" || { echo "::error::betterleaks download failed"; exit 1; }
+          curl -sSfL -o "$tmp/checksums.txt" "$base/checksums.txt" || { echo "::error::checksums.txt download failed"; exit 1; }
+          expected=$(awk -v f="$BL_ASSET" '$2 == f || $2 == "*"f { print $1 }' "$tmp/checksums.txt")
+          if [ -z "$expected" ]; then
+            echo "::error::asset missing from checksums.txt (version/tag mismatch)"; exit 1
+          fi
+          if [ "$expected" != "$BL_SHA256" ]; then
+            echo "::error::checksums.txt entry ($expected) differs from the pinned literal ($BL_SHA256)"; exit 1
+          fi
+          actual=$(sha256sum "$tmp/$BL_ASSET" | awk '{print $1}')
+          if [ "$actual" != "$BL_SHA256" ]; then
+            echo "::error::sha256 mismatch: expected $BL_SHA256, got $actual"; exit 1
+          fi
+          tar -xzf "$tmp/$BL_ASSET" -C "$tmp" betterleaks || { echo "::error::untar failed"; exit 1; }
+          sudo install -m 0755 "$tmp/betterleaks" /usr/local/bin/betterleaks
+          installed=$(betterleaks version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+){1,3}' | head -n 1 || true)
+          if [ "$installed" != "$BL_VERSION" ]; then
+            echo "::error::installed binary reports '${installed:-nothing}', expected $BL_VERSION"; exit 1
+          fi
+          echo "betterleaks $BL_VERSION installed; tarball sha256 verified: $BL_SHA256"
+
+      - name: Secret scan (betterleaks, pattern-scan fallback; coverage asserted)
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -e
+          case "${GITHUB_EVENT_NAME}" in
+            pull_request) base="${PR_BASE_SHA}" ;;
+            *) base="${PUSH_BEFORE}" ;;
+          esac
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+            base=$(sh .githooks/baseline.sh)
+          fi
+          mb=$(git merge-base "$base" HEAD)
+          git diff "$mb" HEAD -U0 > /tmp/pr-diff.txt
+          bytes=$(wc -c < /tmp/pr-diff.txt)
+          # added lines: start with exactly one + (excludes +++ file headers)
+          added=$(grep -E '^\+' /tmp/pr-diff.txt | grep -cvE '^\+\+\+ ' || true)
+          if [ "$bytes" -eq 0 ] || [ "$added" -eq 0 ]; then
+            echo "::error::secret scan input is empty (coverage assert failed; a 0-byte scan is never clean)"
+            exit 1
+          fi
+          echo "scan input: $bytes bytes, $added added lines"
+          rc=0
+          if command -v betterleaks > /dev/null 2>&1 && betterleaks stdin --help > /dev/null 2>&1; then
+            echo "scanner layer 1: betterleaks stdin (entropy-gated rules)"
+            betterleaks stdin < /tmp/pr-diff.txt || rc=1
+            echo "scanner layer 2: pattern grep (closes entropy/class gaps; synthetic low-entropy keys are invisible to entropy-gated rules)"
+            if grep -iE '^\+.*(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36,}|-----BEGIN [A-Z ]*PRIVATE KEY|xox[baprs]-[0-9]{10,}-[0-9]{10,}-[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,})' /tmp/pr-diff.txt > /dev/null; then
+              echo "::error::potential secret in PR diff (pattern layer)"
+              rc=1
+            fi
+            echo "scanner layer 3: PII grep (machine-local paths and private LAN addresses)"
+            pii_ere='^\+.*(/ho''me/|/Use''rs/|10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]{1,3}\.[0-9]{1,3}|192\.168\.[0-9]{1,3}\.[0-9]{1,3})'
+            if grep -E "$pii_ere" /tmp/pr-diff.txt > /dev/null; then
+              echo "::error::local machine path or private LAN address in PR diff (PII layer)"
+              rc=1
+            fi
+          else
+            echo "scanner layer 1: pattern-scan fallback (betterleaks unavailable on this runner)"
+            if grep -iE '^\+.*(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36,}|-----BEGIN [A-Z ]*PRIVATE KEY|xox[baprs]-|sk-[A-Za-z0-9]{20,})' /tmp/pr-diff.txt > /dev/null; then
+              echo "::error::potential secret in PR diff (pattern fallback)"
+              rc=1
+            fi
+          fi
+          if [ "$rc" != "0" ]; then
+            exit 1
+          fi
+          echo "secret scan clean"
+
+      - name: Hook controls (reject paths stay proven)
+        run: |
+          # sync-path controls verify against upstream; give them the remote
+          # the checkout does not carry (public read-only fetch, SYNC.md step 1)
+          git remote get-url upstream > /dev/null 2>&1 || git remote add upstream https://github.com/agent0ai/dox
+          count=0
+          for c in .githooks/*control*.sh; do
+            echo "::group::$(basename "$c")"
+            sh "$c" || { echo "::error::control failed: $c"; exit 1; }
+            count=$((count + 1))
+            echo "::endgroup::"
+          done
+          echo "controls run: $count"

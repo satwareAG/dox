@@ -1,0 +1,12 @@
+# CODEOWNERS - review gate for the enforcement-critical paths.
+# A change to the verification machinery itself must be reviewed by a code
+# owner; this file is the pointer Michael turns into a required code-owner
+# review (see SETUP.md for the exact repo-settings steps).
+# NOTE: CODEOWNERS requires account handles; the org owners team is used so
+# the gate survives individual-account changes.
+.github/    @satwareAG/owners
+.githooks/  @satwareAG/owners
+AGENTS.md   @satwareAG/owners
+SYNC.md     @satwareAG/owners
+SETUP.md    @satwareAG/owners
+install.sh  @satwareAG/owners

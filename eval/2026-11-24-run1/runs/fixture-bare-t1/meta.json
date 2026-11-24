@@ -1,0 +1,22 @@
+{
+  "id": "ses_df2aa4939ffe1RAGiRbxtgZD7d",
+  "title": "dox-eval fixture-bare t1",
+  "model": null,
+  "cost": 0,
+  "tokens": {
+    "input": 35716,
+    "output": 311,
+    "reasoning": 594,
+    "cache": {
+      "read": 104960,
+      "write": 0
+    }
+  },
+  "time": {
+    "created": 1795520050889,
+    "updated": 1795520078040,
+    "busy": 1795520051390,
+    "idle": 1795520078046,
+    "archived": 1795520050914
+  }
+}
