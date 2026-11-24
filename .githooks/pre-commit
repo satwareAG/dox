@@ -32,8 +32,16 @@ else
 fi
 # pattern layer runs always (with or without betterleaks): entropy-gated
 # rules do not see low-entropy synthetic keys
-if git diff --cached -U0 | grep -iE '^\+.*(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36,}|-----BEGIN [A-Z ]*PRIVATE KEY|xox[baprs]-|sk-[A-Za-z0-9]{20,})' > /dev/null 2>&1; then
+if git diff --cached -U0 | grep -iE '^\+.*(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36,}|-----BEGIN [A-Z ]*PRIVATE KEY|xox[baprs]-[0-9]{10,}-[0-9]{10,}-[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,})' > /dev/null 2>&1; then
     echo "pre-commit: potential secret in staged changes (pattern layer)" >&2
+    rc=1
+fi
+# PII layer: committed artifacts must not carry machine-local paths or LAN addresses
+# (the ERE is assembled from split literals so this hook's own source does
+# not match the layer; /ho''me concatenates to /home at runtime)
+pii_ere='^\+.*(/ho''me/|/Use''rs/|10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]{1,3}\.[0-9]{1,3}|192\.168\.[0-9]{1,3}\.[0-9]{1,3})'
+if git diff --cached -U0 | grep -E "$pii_ere" > /dev/null 2>&1; then
+    echo "pre-commit: local machine paths or private LAN addresses in staged changes (PII layer)" >&2
     rc=1
 fi
 [ "$rc" = "0" ] || exit 1
@@ -51,11 +59,27 @@ if git diff --cached --name-only | grep -q '^AGENTS.md$'; then
     fi
     tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/dox-precommit.XXXXXX")
     git show HEAD:AGENTS.md 2> /dev/null | sed -n '/^<!-- DOX-CORE-START/,/^<!-- DOX-CORE-END/p' | sed '1d;$d' > "$tmpdir/old-core"
+    if [ ! -s "$tmpdir/old-core" ] && ! git cat-file -e "HEAD:AGENTS.md" 2> /dev/null; then
+        echo "pre-commit: REJECTED - AGENTS.md removed (the DOX rail cannot be deleted; restore or review as a sync)" >&2
+        rm -rf "$tmpdir"
+        exit 1
+    fi
     git show :AGENTS.md | sed -n '/^<!-- DOX-CORE-START/,/^<!-- DOX-CORE-END/p' | sed '1d;$d' > "$tmpdir/new-core"
     if ! cmp -s "$tmpdir/old-core" "$tmpdir/new-core"; then
-        if git diff --cached --name-only | grep -qE '^SYNC\.md$' \
-            && git show :SYNC.md 2> /dev/null | grep -qE '^Upstream-Commit: [0-9a-f]{40}$'; then
-            echo "pre-commit: protected core changed - reviewed sync signal staged (SYNC.md names the adopted upstream commit)"
+        if git diff --cached --name-only | grep -qE '^SYNC\.md$'; then
+            trailer_sha=$(git show :SYNC.md 2> /dev/null | grep -E '^Upstream-Commit: [0-9a-f]{40}$' | head -1 | cut -d' ' -f2)
+            if [ -z "$trailer_sha" ]; then
+                echo "pre-commit: REJECTED - SYNC.md staged without an 'Upstream-Commit: <40-hex-sha>' line" >&2
+                echo "  a whitespace-only or trailer-less SYNC.md edit does not unlock core edits" >&2
+                rm -rf "$tmpdir"
+                exit 1
+            fi
+            if sh "$(cd "$(dirname "$0")" && pwd)/sync-check.sh" staged "$trailer_sha"; then
+                echo "pre-commit: protected core changed - reviewed sync verified (SHA reachable from upstream/main, core equals that commit, pin bumped)"
+            else
+                rm -rf "$tmpdir"
+                exit 1
+            fi
         else
             echo "pre-commit: REJECTED - protected DOX core modified without a valid sync signal" >&2
             echo "  core edits are reviewed upstream syncs only (see SYNC.md);" >&2

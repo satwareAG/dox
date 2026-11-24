@@ -1,6 +1,9 @@
 {
   "run": "2026-11-24-run1",
-  "model": null,
+  "model": {
+    "id": "glm-5.3-flash",
+    "providerID": "zai-coding-plan"
+  },
   "runs": [
     {
       "slug": "fixture-bare-t1",
@@ -20,7 +23,10 @@
         }
       },
       "cost": 0,
-      "model": null,
+      "model": {
+        "id": "glm-5.3-flash",
+        "providerID": "zai-coding-plan"
+      },
       "sessionId": "ses_df2aa4939ffe1RAGiRbxtgZD7d",
       "counts": {
         "turnsUser": 1,
@@ -49,7 +55,10 @@
         }
       },
       "cost": 0,
-      "model": null,
+      "model": {
+        "id": "glm-5.3-flash",
+        "providerID": "zai-coding-plan"
+      },
       "sessionId": "ses_df2a9dd28ffeT4T4Z93uziMwg2",
       "counts": {
         "turnsUser": 1,
@@ -78,7 +87,10 @@
         }
       },
       "cost": 0,
-      "model": null,
+      "model": {
+        "id": "glm-5.3-flash",
+        "providerID": "zai-coding-plan"
+      },
       "sessionId": "ses_df2a99001ffeHtg4ARlMag9U4d",
       "counts": {
         "turnsUser": 1,
@@ -107,7 +119,10 @@
         }
       },
       "cost": 0,
-      "model": null,
+      "model": {
+        "id": "glm-5.3-flash",
+        "providerID": "zai-coding-plan"
+      },
       "sessionId": "ses_df2a8ffe5ffeEXMnwtzwrYXPor",
       "counts": {
         "turnsUser": 1,
@@ -136,7 +151,10 @@
         }
       },
       "cost": 0,
-      "model": null,
+      "model": {
+        "id": "glm-5.3-flash",
+        "providerID": "zai-coding-plan"
+      },
       "sessionId": "ses_df2aac2f5ffeyM6Vya9m24vTlm",
       "counts": {
         "turnsUser": 1,
@@ -165,7 +183,10 @@
         }
       },
       "cost": 0,
-      "model": null,
+      "model": {
+        "id": "glm-5.3-flash",
+        "providerID": "zai-coding-plan"
+      },
       "sessionId": "ses_df2aa83f3ffeZ7s6wL3A7T5MvP",
       "counts": {
         "turnsUser": 1,

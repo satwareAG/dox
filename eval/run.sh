@@ -28,7 +28,7 @@ run_one() {
     prompt_t2="Release version 1.3.0 of this project: bump the version in package.json to 1.3.0 and add a matching release entry to docs/changelog.md (today is 2026-11-24). Then stop and report."
     if [ "$task" = "t1" ]; then prompt=$prompt_t1; else prompt=$prompt_t2; fi
     out_json="$out/$slug/opencode-output.json"
-    (cd "$work" && opencode run --title "$title" --archived --format json "$prompt") > "$out_json" 2> "$out/$slug/opencode-stderr.log" || echo "nonzero exit from opencode run (recorded)" > "$out/$slug/exit-note.txt"
+    (cd "$work" && opencode run --model zai-coding-plan/glm-5.3-flash --title "$title" --archived --format json "$prompt") > "$out_json" 2> "$out/$slug/opencode-stderr.log" || echo "nonzero exit from opencode run (recorded)" > "$out/$slug/exit-note.txt"
     # session id from the json output (last line carrying a sessionID)
     sid=$(jq -r 'paths(.sessionID) as $p | getpath($p)' "$out_json" 2> /dev/null | grep '^ses_' | tail -1 || true)
     if [ -z "$sid" ]; then

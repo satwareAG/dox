@@ -60,7 +60,14 @@ for (const slug of readdirSync(runsDir).sort()) {
   }
   if (existsSync(join(d, "transcript.json"))) {
     try {
-      entry.counts = countTranscript(JSON.parse(readFileSync(join(d, "transcript.json"), "utf8")));
+      const t = JSON.parse(readFileSync(join(d, "transcript.json"), "utf8"));
+      entry.counts = countTranscript(t);
+      // derive the model from the transcript when the session record lacks it
+      if (!entry.model) {
+        const msgs = t?.data?.messages ?? [];
+        entry.model = msgs.find((m) => m.type === "assistant")?.model ?? null;
+        if (entry.model) summary.model ??= entry.model;
+      }
     } catch (e) {
       entry.transcriptError = String(e);
     }
@@ -73,7 +80,8 @@ console.log(JSON.stringify(summary.runs.map((r) => ({
   slug: r.slug,
   success: r.success,
   tokensIn: r.tokens?.input ?? null,
-  tokensOut: (r.tokens?.output ?? 0) + (r.tokens?.reasoning ?? 0) || null,
+  tokensOut: r.tokens ? (r.tokens.output ?? 0) + (r.tokens.reasoning ?? 0) : null,
+  model: r.model ? `${r.model.providerID ?? ""}/${r.model.id ?? ""}`.replace(/\/$/, "") : null,
   toolCalls: r.counts?.toolCalls ?? null,
   turns: r.counts ? r.counts.turnsUser + r.counts.turnsAssistant : null,
   timeSec: r.timeSec,
