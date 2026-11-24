@@ -86,6 +86,6 @@ This project is not yet indexed. Before continuing you must scan the project, bu
 
 ## Extension Point
 
-- Project-specific and installer-specific content attaches only AFTER the DOX-CORE-END marker, or in the User Preferences and Child DOX Index sections inside the core
-- Nothing is inserted between DOX-CORE-START and DOX-CORE-END except reviewed upstream core changes (see [SYNC.md](./SYNC.md))
-- Addenda files ([addenda/](./addenda/)) are concatenated by installers after DOX-CORE-END; re-runs must be idempotent (replace between the ADDENDUM markers)
+- Project-specific and installer-specific content attaches only AFTER the closing core marker, or in the User Preferences and Child DOX Index sections inside the core
+- Nothing is inserted inside the protected range except reviewed upstream core changes (see [SYNC.md](./SYNC.md))
+- Addenda files ([addenda/](./addenda/)) are concatenated by installers after the closing core marker; re-runs must be idempotent (replace between the ADDENDUM markers)
