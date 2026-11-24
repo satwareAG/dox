@@ -67,7 +67,7 @@ function lintDir(dir) {
     }
     const link = m[1];
     const target = resolve(dir, decodeURIComponent(link));
-    if (!existsSync(target) || !statSync(target).isFile() || !(target.endsWith("AGENTS.md") || target.endsWith("AGENTS.md"))) {
+    if (!existsSync(target) || !statSync(target).isFile() || !target.endsWith("AGENTS.md")) {
       findings.push(`${label}: link ${link} does not resolve to an existing AGENTS.md (rule 2)`);
     }
   }
