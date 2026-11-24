@@ -35,6 +35,10 @@ No AGENTS.md yet? Copy the file into your project root. The agent will see these
 
 For an existing project, you can tell your agent: `Initialize DOX tree for this project now.` It will create all the child AGENTS.md files and indexes.
 
+## Fork status
+
+This is the satwareAG-maintained fork of [agent0ai/dox](https://github.com/agent0ai/dox), pinned at upstream commit 765ae4ac (tag `v0-upstream`). Upstream is dormant since 2026-09-01; this fork carries the maintained spec, the upstream sync protocol ([SYNC.md](./SYNC.md)), and installer-consumable addenda ([addenda/](./addenda/)). Core changes land only as reviewed upstream syncs - see SYNC.md for the protocol and reject conditions.
+
 ## Credits
 
 <p align="center">
