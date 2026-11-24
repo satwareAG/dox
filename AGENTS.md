@@ -1,3 +1,4 @@
+<!-- DOX-CORE-START (protected: do not edit inside this range) -->
 # DOX framework
 
 - DOX is highly performant AGENTS.md hierarchy installed here
@@ -81,3 +82,10 @@ When the user requests a durable behavior change, record it here or in the relev
 ## Child DOX Index
 
 This project is not yet indexed. Before continuing you must scan the project, build the DOX tree and replace this message with the actual index. Go deep and scan files recursively to properly evaluate complexity and create nested DOX files where needed.
+<!-- DOX-CORE-END -->
+
+## Extension Point
+
+- Project-specific and installer-specific content attaches only AFTER the DOX-CORE-END marker, or in the User Preferences and Child DOX Index sections inside the core
+- Nothing is inserted between DOX-CORE-START and DOX-CORE-END except reviewed upstream core changes (see [SYNC.md](./SYNC.md))
+- Addenda files ([addenda/](./addenda/)) are concatenated by installers after DOX-CORE-END; re-runs must be idempotent (replace between the ADDENDUM markers)
