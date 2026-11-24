@@ -84,6 +84,12 @@ When the user requests a durable behavior change, record it here or in the relev
 This project is not yet indexed. Before continuing you must scan the project, build the DOX tree and replace this message with the actual index. Go deep and scan files recursively to properly evaluate complexity and create nested DOX files where needed.
 <!-- DOX-CORE-END -->
 
+<!-- TEMPLATE-NOTICE-START -->
+## Template notice
+
+This file is the distributable template, not a project to scan. The Child DOX Index placeholder above is part of the protected core and applies only to an INSTALLED copy of this file in a real project; agents working in THIS repository must not index this repo or replace the placeholder here. Install with [install.sh](./install.sh), which appends the mandatory [addenda/honesty.md](./addenda/honesty.md) after the closing core marker and removes this notice in the installed copy.
+<!-- TEMPLATE-NOTICE-END -->
+
 ## Extension Point
 
 - Project-specific and installer-specific content attaches only AFTER the closing core marker

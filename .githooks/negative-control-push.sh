@@ -15,10 +15,12 @@ trap cleanup EXIT INT TERM
 
 git -C "$repo" worktree add --detach "$tmp/wt" HEAD > /dev/null 2>&1
 cd "$tmp/wt"
-# mutate the protected core WITH a sync signal staged (passes pre-commit),
-# so pre-push is the only gate that can catch this tip
+# mutate the protected core WITH a valid sync signal staged (trailer in
+# SYNC.md), so the commit passes the hardened pre-commit and pre-push is the
+# gate under test; the commit MESSAGE carries no trailer, so pre-push's range
+# check rejects this tip
 sed -i 's/- AGENTS.md files are binding work contracts for their subtrees/- AGENTS.md files are binding work contracts, tampered/' AGENTS.md
-printf -- '- core tampered in NC (revert follow-up)\n' >> SYNC.md
+printf -- '\nUpstream-Commit: 765ae4ac02cc884eefcd41a3d0f71941721adb89\n' >> SYNC.md
 git add AGENTS.md SYNC.md
 git -c user.name=nc-bot -c user.email=nc-bot@example.invalid commit -m "NC: tampered core tip" > /dev/null 2>&1
 tampered_sha=$(git rev-parse HEAD)

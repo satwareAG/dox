@@ -24,16 +24,24 @@ The result is simple: traverse the docs, understand the local rules, make precis
 
 ## How to use
 
-1. Copy the contents of [AGENTS.md](./AGENTS.md?plain=1) into your project's AGENTS.md file.
+1. Run the installer from a checkout (or release bundle) of this repo:
+
+   ```sh
+   sh install.sh /path/to/your-project
+   ```
+
+   The installer installs the template `AGENTS.md` and appends [addenda/honesty.md](./addenda/honesty.md) after the closing core marker. Honesty is mandatory in every install. Optional flags: `--site-release` (for projects publishing live pages), `--lazy-read` (token-budgeted AGENTS.md chain reads). Re-runs are idempotent.
+
+2. No installer available? Append the contents of [addenda/honesty.md](./addenda/honesty.md) to your project's `AGENTS.md` after the closing `DOX-CORE-END` marker. **Copying AGENTS.md alone is incomplete**: without the honesty addendum the install is out of spec.
 
 <br>
-That's it. No installation, no dependencies, no package, no runtime. DOX is just a Markdown instruction for AI agents.
+No runtime, no package, no dependencies - DOX is Markdown plus a small install script.
 
 It works with any AI agent that supports AGENTS.md files, including Codex, Claude Code, OpenCode, and similar tools.
 
-No AGENTS.md yet? Copy the file into your project root. The agent will see these instructions and will start building the DOX tree.
+No AGENTS.md yet? Run the installer and it will place the file. The agent will see these instructions and will start building the DOX tree.
 
-For an existing project, you can tell your agent: `Initialize DOX tree for this project now.` It will create all the child AGENTS.md files and indexes.
+For an existing project, tell your agent: `Initialize DOX tree for this project now.` It will create all the child AGENTS.md files and indexes.
 
 ## Fork status
 

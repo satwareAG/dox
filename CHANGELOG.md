@@ -24,3 +24,10 @@ Forward-only. One entry per adopted change after the `v0-upstream` baseline (age
 - `pre-commit` header comment corrected: betterleaks (was gitleaks)
 - New controls: `negative-control-trailing-newline.sh`, `negative-control-whitespace-unlock.sh`, `positive-control-sync.sh`; CI runs all controls via glob
 - SYNC.md: protocol step 1 adds the upstream remote when missing; step 4 formalizes the trailer + pin-bump requirements; hooks section documents the hardened behavior
+
+## 2026-11-24 - installer + install-path spec
+
+- `install.sh`: idempotent installer; installs the canonical template, appends the mandatory honesty addendum after the closing core marker, and manages opt-in addenda (`--site-release`, `--lazy-read`) as declared state - a re-run without a flag removes that block; a no-change re-run is byte-identical; the protected core is never modified; intact DOX marker pair required (refuses non-DOX targets)
+- README: install path requires the installer or appending `addenda/honesty.md`; copying AGENTS.md alone is declared incomplete
+- Canonical AGENTS.md: post-marker template notice (delimited `TEMPLATE-NOTICE-START/END`) states this file is the distributable template, not a project to scan; the installer replaces it with an installed-from line in installed copies
+- Installer control: `.githooks/positive-control-install.sh` (idempotency, honesty mandatory, flag gating, core untouched)
