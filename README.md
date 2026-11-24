@@ -30,7 +30,7 @@ The result is simple: traverse the docs, understand the local rules, make precis
    sh install.sh /path/to/your-project
    ```
 
-   The installer installs the template `AGENTS.md` and appends [addenda/honesty.md](./addenda/honesty.md) after the closing core marker. Honesty is mandatory in every install. Optional flags: `--site-release` (for projects publishing live pages), `--lazy-read` (token-budgeted AGENTS.md chain reads). Re-runs are idempotent.
+   The installer installs the template `AGENTS.md` and appends [addenda/honesty.md](./addenda/honesty.md) after the closing core marker. Honesty is mandatory in every install. Optional flags: `--site-release` (for projects publishing live pages), `--lazy-read` (token-budgeted AGENTS.md chain reads; keeps reads to the chain owning the touched paths and requires explicit tool reads of nested files). Re-runs are idempotent.
 
 2. No installer available? Append the contents of [addenda/honesty.md](./addenda/honesty.md) to your project's `AGENTS.md` after the closing `DOX-CORE-END` marker. **Copying AGENTS.md alone is incomplete**: without the honesty addendum the install is out of spec.
 
