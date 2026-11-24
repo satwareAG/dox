@@ -3,10 +3,11 @@
 # must NOT reach origin.
 #   a) without a sync signal, pre-commit rejects it (byte-exact cmp catches
 #      what $(...) stripping would hide)
-#   b) even with a sync signal staged (SYNC.md carrying a valid
-#      Upstream-Commit trailer), a tip whose core diverges from the pinned
-#      baseline is rejected by pre-push when the commit message lacks the
-#      trailer
+#   b) even with a format-valid sync signal (trailer naming the real upstream
+#      commit, pin matching), the byte-exact core-equality check rejects it:
+#      a trailing newline is not part of the upstream file
+#   c) a --no-verify commit of that tip (message without trailer) is rejected
+#      by pre-push
 set -e
 repo=$(cd "$(dirname "$0")/.." && git rev-parse --show-toplevel)
 tmp=$(mktemp -d /tmp/dox-nc-tnl.XXXXXX)
@@ -31,17 +32,19 @@ if sh "$repo/.githooks/pre-commit" > /dev/null 2>&1; then
 fi
 echo "NC sub-a PASS: trailing-newline core edit rejected without sync signal"
 
-# b) valid trailer in the staged SYNC.md, but the commit message carries no
-#    trailer -> pre-commit accepts, pre-push must reject the tip
+# b) format-valid sync signal (trailer + pin matching the named commit) but
+#    the core carries the extra newline -> the equality check must reject
 printf -- '\nUpstream-Commit: 765ae4ac02cc884eefcd41a3d0f71941721adb89\n' >> SYNC.md
 git add SYNC.md
-if ! sh "$repo/.githooks/pre-commit" > /dev/null 2>&1; then
-    echo "NC FAILED: pre-commit rejected a properly signalled sync-path edit (positive path broken)" >&2
+if sh "$repo/.githooks/pre-commit" > /dev/null 2>&1; then
+    echo "NC FAILED: pre-commit accepted a trailing-newline core despite a format-valid sync signal" >&2
     exit 1
 fi
-echo "NC sub-b1 PASS: trailer-carrying SYNC.md unlocks the sync path"
+echo "NC sub-b PASS: trailing-newline core rejected despite format-valid sync signal"
+
+# c) --no-verify commit (message without trailer) -> pre-push must reject the tip
 git -c user.name=nc-bot -c user.email=nc-bot@example.invalid \
-    commit -m "NC: trailing-newline core tip (message lacks trailer)" > /dev/null 2>&1
+    commit --no-verify -m "NC: trailing-newline core tip (message lacks trailer)" > /dev/null 2>&1
 tip=$(git rev-parse HEAD)
 base=$(git -C "$repo" rev-parse v0-upstream)
 if printf '%s %s %s %s\n' "refs/heads/main" "$tip" "refs/heads/main" "$base" \
@@ -49,6 +52,6 @@ if printf '%s %s %s %s\n' "refs/heads/main" "$tip" "refs/heads/main" "$base" \
     echo "NC FAILED: pre-push accepted a trailing-newline core tip" >&2
     exit 1
 fi
-echo "NC sub-b2 PASS: trailing-newline core tip rejected by pre-push"
+echo "NC sub-c PASS: trailing-newline core tip rejected by pre-push"
 
 echo "NC PASS: trailing-newline core edit rejected"
